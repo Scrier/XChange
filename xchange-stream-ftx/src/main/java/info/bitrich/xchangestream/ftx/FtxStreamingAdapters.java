@@ -6,6 +6,11 @@ import com.google.common.collect.Streams;
 import info.bitrich.xchangestream.ftx.dto.FtxOrderbookResponse;
 import info.bitrich.xchangestream.ftx.dto.FtxTickerResponse;
 import info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper;
+import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.instrument.Instrument;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -13,16 +18,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Stream;
 import java.util.zip.CRC32;
-
-import org.knowm.xchange.dto.Order;
-import org.knowm.xchange.dto.marketdata.OrderBook;
-import org.knowm.xchange.dto.marketdata.Ticker;
-import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.instrument.Instrument;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FtxStreamingAdapters {
 
