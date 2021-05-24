@@ -2,6 +2,7 @@ package info.bitrich.xchangestream.ftx;
 
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
+import io.reactivex.Observer;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -40,6 +41,9 @@ public class FtxStreamingMarketDataService implements StreamingMarketDataService
 
   @Override
   public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
-    return null;
+    return service
+            .subscribeChannel("trades:" + FtxAdapters.adaptCurrencyPairToFtxMarket(currencyPair))
+            .map(res -> FtxStreamingAdapters.adaptTradeMessage(currencyPair, res));
   }
+
 }

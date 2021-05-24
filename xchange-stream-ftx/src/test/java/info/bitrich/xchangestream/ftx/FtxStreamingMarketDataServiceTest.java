@@ -6,6 +6,7 @@ import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import info.bitrich.xchangestream.ftx.dto.FtxOrderbookResponse;
 import info.bitrich.xchangestream.ftx.dto.FtxTickerResponse;
+import info.bitrich.xchangestream.ftx.dto.FtxTradeResponse;
 import io.reactivex.disposables.Disposable;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -17,6 +18,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
+import java.sql.Date;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
@@ -86,10 +89,20 @@ public class FtxStreamingMarketDataServiceTest {
                   }
                 });
 
+    Disposable dis4 =
+            exchange
+                    .getStreamingMarketDataService()
+                    .getTrades(CurrencyPair.BTC_USD)
+                    .subscribe(
+                            trade -> {
+                              LOG.info(trade.toString());
+                            });
+
     TimeUnit.SECONDS.sleep(6);
     dis.dispose();
     dis2.dispose();
     dis3.dispose();
+    dis4.dispose();
   }
 
   @Test
@@ -130,6 +143,26 @@ public class FtxStreamingMarketDataServiceTest {
                 BigDecimal.valueOf(0.0793),
                 BigDecimal.valueOf(37829.0)))
         .isEqualTo(ftxResponse);
+  }
+
+  @Test
+  public void testParserTrade() throws IOException {
+    // Read in the JSON from the example resources
+    InputStream is =
+            FtxStreamingMarketDataServiceTest.class.getResourceAsStream(
+                    "/ftxTradesResponse-example.json");
+
+    // Use Jackson to parse it
+    ObjectMapper mapper = new ObjectMapper();
+    FtxTradeResponse ftxResponse = mapper.readValue(is, FtxTradeResponse.class);
+
+    // Verify that the example data was unmarshalled correctly
+
+    assertThat(1147735732L).isEqualTo(ftxResponse.getId());
+    assertThat(33545.0).isEqualTo(ftxResponse.getPrice().doubleValue());
+    assertThat(0.0226).isEqualTo(ftxResponse.getSize().doubleValue());
+    assertThat("buy").isEqualTo(ftxResponse.getSide());
+    assertThat(false).isEqualTo(ftxResponse.isLiquidation());
   }
 
   @Test

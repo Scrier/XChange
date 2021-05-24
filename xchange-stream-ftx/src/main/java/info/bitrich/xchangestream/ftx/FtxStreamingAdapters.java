@@ -5,10 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Streams;
 import info.bitrich.xchangestream.ftx.dto.FtxOrderbookResponse;
 import info.bitrich.xchangestream.ftx.dto.FtxTickerResponse;
+import info.bitrich.xchangestream.ftx.dto.FtxTradeResponse;
 import info.bitrich.xchangestream.service.netty.StreamingObjectMapperHelper;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
+import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.instrument.Instrument;
 
@@ -19,6 +20,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.zip.CRC32;
+
+import static org.knowm.xchange.dto.Order.OrderType.ASK;
+import static org.knowm.xchange.dto.Order.OrderType.BID;
 
 public class FtxStreamingAdapters {
 
@@ -47,7 +51,7 @@ public class FtxStreamingAdapters {
                             orderBook
                                 .getAsks()
                                 .add(
-                                    new LimitOrder.Builder(Order.OrderType.ASK, instrument)
+                                    new LimitOrder.Builder(ASK, instrument)
                                         .limitPrice(ask.get(0))
                                         .originalAmount(ask.get(1))
                                         .build()));
@@ -59,7 +63,7 @@ public class FtxStreamingAdapters {
                             orderBook
                                 .getBids()
                                 .add(
-                                    new LimitOrder.Builder(Order.OrderType.BID, instrument)
+                                    new LimitOrder.Builder(BID, instrument)
                                         .limitPrice(bid.get(0))
                                         .originalAmount(bid.get(1))
                                         .build()));
@@ -69,7 +73,7 @@ public class FtxStreamingAdapters {
                     .forEach(
                         ask ->
                             orderBook.update(
-                                new LimitOrder.Builder(Order.OrderType.ASK, instrument)
+                                new LimitOrder.Builder(ASK, instrument)
                                     .limitPrice(ask.get(0))
                                     .originalAmount(ask.get(1))
                                     .build()));
@@ -78,7 +82,7 @@ public class FtxStreamingAdapters {
                     .forEach(
                         bid ->
                             orderBook.update(
-                                new LimitOrder.Builder(Order.OrderType.BID, instrument)
+                                new LimitOrder.Builder(BID, instrument)
                                     .limitPrice(bid.get(0))
                                     .originalAmount(bid.get(1))
                                     .build()));
@@ -150,4 +154,32 @@ public class FtxStreamingAdapters {
         .findFirst()
         .orElse(new Ticker.Builder().build());
   }
+
+  public static Trade adaptTradeMessage(Instrument instrument, JsonNode jsonNode) {
+    return Streams.stream(jsonNode)
+            .peek(System.out::println)
+            .filter(t -> t.has("data"))
+            .map(t -> t.get("data"))
+            .peek(System.out::println)
+            .filter(JsonNode::isObject)
+            .map(
+                    res -> {
+                      try {
+                        return mapper.readValue(res.toString(), FtxTradeResponse.class);
+                      } catch (IOException e) {
+                        throw new RuntimeException(e);
+                      }
+                    })
+            .map(
+                    trade ->
+                            new Trade.Builder()
+                                    .instrument(instrument)
+                                    .price(trade.getPrice())
+                                    .originalAmount(trade.getSize())
+                                    .type(trade.getSide().equals("buy") ? BID : ASK)
+                                    .build())
+            .findFirst()
+            .orElse(new Trade.Builder().build());
+  }
+
 }
